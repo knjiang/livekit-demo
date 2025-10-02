@@ -6,9 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "livekit-agents[openai]~=1.2",
-    "livekit-plugins-noise-cancellation~=0.2",
-    "python-dotenv>=1.0.0",
-    "braintrust>=0.2.9",
+    "braintrust[otel]>=0.2.9",
     "opentelemetry-exporter-otlp-proto-http>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
 ]

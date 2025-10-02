@@ -1,33 +1,14 @@
-from dotenv import load_dotenv
-import os
-
 from livekit import agents
 from livekit.agents import AgentSession, Agent, RoomInputOptions
 from livekit.plugins import openai, noise_cancellation
 from livekit.agents.telemetry import set_tracer_provider
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-load_dotenv(".env.local")
-
+from braintrust.otel import BraintrustSpanProcessor
 
 def setup_braintrust_telemetry():
     """Setup Braintrust OTEL telemetry for agent monitoring"""
-    api_key = os.getenv("BRAINTRUST_API_KEY")
-    braintrust_parent = os.getenv("BRAINTRUST_PARENT")
-
-    if not api_key or not braintrust_parent:
-        print("Warning: Braintrust telemetry not configured. Set BRAINTRUST_API_KEY and BRAINTRUST_PARENT")
-        return
-
-    os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "https://api.braintrust.dev/otel"
-    os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = (
-        f"Authorization=Bearer {api_key}, x-bt-parent={braintrust_parent}"
-    )
-
     trace_provider = TracerProvider()
-    trace_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    trace_provider.add_span_processor(BraintrustSpanProcessor())
     set_tracer_provider(trace_provider)
     print("✓ Braintrust telemetry enabled")
 
@@ -45,7 +26,6 @@ async def entrypoint(ctx: agents.JobContext):
     session = AgentSession(
         llm=openai.realtime.RealtimeModel(voice="coral")
     )
-
     await session.start(
         room=ctx.room,
         agent=Assistant(),
@@ -54,9 +34,12 @@ async def entrypoint(ctx: agents.JobContext):
         ),
     )
 
+    # Generate reply
     await session.generate_reply(
         instructions="Greet the user and offer your assistance."
     )
+
+    # Close the session via ctrl + c
 
 
 if __name__ == "__main__":
